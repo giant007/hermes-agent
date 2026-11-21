@@ -338,12 +338,12 @@ Q2 的完整代码已提交到远程仓库，压缩包中只包含测试报告�
 
 - 仓库地址：`https://github.com/giant007/hermes-agent.git`
 - 分支：`main`
-- 提交：`586fedcd feat: add restricted terminal backend and Q2 test report`
+- 提交：以远端 `main` 分支最新提交为准（包含 restricted 实现、13 项测试与本报告）
 
 获取代码：
 
 ```bash
 git clone https://github.com/giant007/hermes-agent.git
 cd hermes-agent
-git checkout 586fedcd
+git checkout main
 ```
