@@ -3,6 +3,7 @@ setup.py names are resolved through the module object so test patches on ``herme
 take effect; setup.py re-exports the public entry points."""
 
 import json
+import json
 import logging
 import os
 from pathlib import Path
@@ -131,6 +132,23 @@ def find_docker() -> str | None:
     # Deferred: tools.environments.docker is heavy and this module loads on every hermes_cli.setup import.
     from tools.environments.docker import find_docker as _find_docker
     return _find_docker()
+
+
+def _setup_backend_restricted(config: dict) -> None:
+    _setup.print_success("Terminal backend: Restricted")
+    _setup.print_info("Commands run in a subprocess confined to one directory.",
+                       "Only the allowlisted environment variables reach that subprocess.")
+    terminal = config.setdefault("terminal", {})
+    default_root = terminal.get("restricted_root") or str(Path.cwd())
+    root = _setup.prompt("  Allowed directory (must exist)", default_root).strip() or default_root
+    terminal["restricted_root"] = root
+    _setup.save_env_value("TERMINAL_RESTRICTED_ROOT", root)
+
+    default_names = terminal.get("restricted_allowed_env") or ["PATH", "HOME", "LANG", "LC_ALL", "TERM"]
+    raw = _setup.prompt("  Comma-separated env var allowlist", ",".join(default_names))
+    names = [name.strip() for name in raw.split(",") if name.strip()]
+    terminal["restricted_allowed_env"] = names
+    _setup.save_env_value("TERMINAL_RESTRICTED_ALLOWED_ENV", json.dumps(names))
 
 
 def _setup_backend_docker(config: dict) -> None:
@@ -262,12 +280,14 @@ def _setup_backend_plugin(config: dict, backend: str) -> None:
 
 _BUILTIN_TERMINAL_BACKENDS = [
     ("local", "Local - run directly on this machine (default)"),
+    ("restricted", "Restricted - subprocess confined to a directory with cleaned env"),
     ("docker", "Docker/Podman - isolated container with configurable resources"),
     ("modal", "Modal - serverless cloud sandbox"), ("ssh", "SSH - run on a remote machine"),
     ("daytona", "Daytona - persistent cloud development environment"),
     ("vercel_sandbox", "Vercel Sandbox - cloud microVM with snapshot filesystem persistence")]
 _TERMINAL_BACKEND_SETUP = {
-    "local": _setup_backend_local, "docker": _setup_backend_docker, "modal": _setup_backend_modal,
+    "local": _setup_backend_local, "restricted": _setup_backend_restricted,
+    "docker": _setup_backend_docker, "modal": _setup_backend_modal,
     "daytona": _setup_backend_daytona, "vercel_sandbox": _setup_backend_vercel, "ssh": _setup_backend_ssh}
 # Backend -> env var mirrored from config after setup (config.yaml is the source of truth, but
 # terminal_tool reads these from .env).

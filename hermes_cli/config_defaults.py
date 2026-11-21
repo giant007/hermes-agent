@@ -290,6 +290,11 @@ DEFAULT_CONFIG = {
         # traceback.
         "degraded_mode": "warn",
         "cwd": ".",  # Use current directory
+        # Restricted backend: commands run as a subprocess with this directory as
+        # their cwd root. Empty = terminal.cwd. Only allowed_env host variables
+        # are forwarded to the child process.
+        "restricted_root": "",
+        "restricted_allowed_env": ["PATH", "HOME", "LANG", "LC_ALL", "TERM"],
         # Root for terminal session temp files (background logs/pid/exit files, code-exec
         # sandboxes). Empty = TMPDIR/TMP/TEMP if set, else HERMES_HOME/cache/terminal (auto-pruned
         # after 72h) — NOT tmpfs /tmp, which is RAM-capped and fills under load. Must be an existing

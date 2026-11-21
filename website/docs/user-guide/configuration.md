@@ -262,12 +262,14 @@ Before that stash step, Hermes also restores tracked `package-lock.json` diffs t
 
 ## Terminal Backend Configuration
 
-Hermes ships six terminal backends. Each determines where the agent's shell commands actually execute — your local machine, a Docker container, a remote server via SSH, a Modal cloud sandbox (direct or via the Nous-managed gateway), a Daytona workspace, or a Vercel Sandbox. Plugins add more, such as the official [Singularity/Apptainer](#singularityapptainer-backend) and [Sprites](#sprites-backend) backends.
+Hermes ships seven terminal backends. Each determines where the agent's shell commands actually execute — your local machine, a confined local subprocess, a Docker container, a remote server via SSH, a Modal cloud sandbox (direct or via the Nous-managed gateway), a Daytona workspace, or a Vercel Sandbox. Plugins add more, such as the official [Singularity/Apptainer](#singularityapptainer-backend) and [Sprites](#sprites-backend) backends.
 
 ```yaml
 terminal:
-  backend: local    # local | docker | ssh | modal | daytona | vercel_sandbox | <plugin backend>
+  backend: local    # local | restricted | docker | ssh | modal | daytona | vercel_sandbox | <plugin backend>
   cwd: "."          # Gateway/cron working directory (CLI always uses launch dir)
+  restricted_root: ""          # Restricted backend root; empty = terminal.cwd
+  restricted_allowed_env: [PATH, HOME, LANG, LC_ALL, TERM]
   temp_dir: ""      # Session temp root; empty = TMPDIR, else ~/.hermes/cache/terminal
   font_family: ""   # Desktop terminal font; e.g. "MesloLGS NF"
   timeout: 180      # Per-command timeout in seconds
@@ -335,6 +337,7 @@ For cloud sandboxes such as Modal, Daytona, Vercel Sandbox, and Sprites, `contai
 | Backend | Where commands run | Isolation | Best for |
 |---------|-------------------|-----------|----------|
 | **local** | Your machine directly | None | Development, personal use |
+| **restricted** | Local subprocess under `terminal.restricted_root` | CWD jail + cleaned env (no namespaces) | Lightweight local confinement, CI with fixed workspaces |
 | **docker** | Single persistent Docker container (shared across session, `/new`, subagents) | Full (namespaces, cap-drop) | Safe sandboxing, CI/CD |
 | **ssh** | Remote server via SSH | Network boundary | Remote dev, powerful hardware |
 | **modal** | Modal cloud sandbox | Full (cloud VM) | Ephemeral cloud compute, evals |
@@ -403,6 +406,28 @@ real_home = Path(os.environ.get("HERMES_REAL_HOME", os.environ["HOME"]))
 :::warning
 The agent has the same filesystem access as your user account. Use `hermes tools` to disable tools you don't want, or switch to Docker for sandboxing.
 :::
+
+### Restricted Backend
+
+Runs commands in a child `bash -c` process whose working directory is confined to
+`terminal.restricted_root` (default: `terminal.cwd`). Normal `cd` calls that leave
+the root are refused, the child does not inherit the host environment, and
+commands are killed when `terminal.timeout` expires. Only variables named in
+`terminal.restricted_allowed_env` are forwarded; `PATH`, `HOME`, `LANG`, `LC_ALL`
+and `TERM` are forwarded by default.
+
+```yaml
+terminal:
+  backend: restricted
+  restricted_root: /srv/hermes-workspace
+  restricted_allowed_env: [PATH, HOME, LANG, TERM]
+  timeout: 60
+```
+
+This is a lightweight guard, not OS-level isolation: it does not use namespaces,
+seccomp or filesystem mounts, and absolute paths outside the root are still visible
+to commands that explicitly open them. Use Docker or another sandbox backend when
+you need a security boundary.
 
 ### Docker Backend
 

@@ -936,6 +936,11 @@ def _get_env_config() -> dict[str, Any]:
             "TERMINAL_SSH_PERSISTENT", _tenv("TERMINAL_PERSISTENT_SHELL", "true"),
         ),
         "local_persistent": _tenv_bool("TERMINAL_LOCAL_PERSISTENT", "true"),
+        # Restricted backend: cwd root and the only env names forwarded to the child.
+        "restricted_root": _tenv("TERMINAL_RESTRICTED_ROOT", ""),
+        "restricted_allowed_env": _parse_env_var(
+            "TERMINAL_RESTRICTED_ALLOWED_ENV",
+            '["PATH", "HOME", "LANG", "LC_ALL", "TERM"]', json.loads, "valid JSON"),
         # Container resources (MB); ignored for local/ssh.
         "container_cpu": container_cpu,
         "container_memory": container_memory,

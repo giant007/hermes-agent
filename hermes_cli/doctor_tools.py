@@ -184,7 +184,8 @@ def _check_git_and_rg(should_fix: bool, f: Finding) -> None:
         check_info(f"Install for faster search: {_system_package_install_cmd('ripgrep')}")
 
 
-_BUILTIN_TERMINAL_BACKENDS = {"local", "docker", "modal", "managed_modal", "daytona", "vercel_sandbox", "ssh"}
+_BUILTIN_TERMINAL_BACKENDS = {"local", "docker", "modal", "managed_modal", "daytona", "vercel_sandbox",
+                              "ssh", "restricted"}
 
 
 def _check_docker_backend(terminal_env: str, running_in_container: bool, issues: list[str]) -> None:
@@ -227,6 +228,14 @@ def _check_ssh_backend(issues: list[str]) -> None:
     cmd += [f"{ssh_user}@{ssh_host}" if ssh_user else ssh_host, "echo ok"]
     _require(_run_ok(cmd, timeout=15, text=True, encoding='utf-8', errors='replace'),
              f"SSH connection to {ssh_host}", (f"SSH connection to {ssh_host}", ""), f"Check SSH configuration for {ssh_host}", issues)
+
+
+def _check_restricted_backend(issues: list[str]) -> None:
+    root = os.getenv("TERMINAL_RESTRICTED_ROOT") or os.getenv("TERMINAL_CWD") or "."
+    resolved = Path(root).expanduser()
+    _require(resolved.is_dir(), (f"Restricted backend root {resolved}", "(exists)"),
+             (f"Restricted backend root {resolved}", "(missing)"),
+             "Fix terminal.restricted_root in config.yaml, or run `hermes setup terminal`.", issues)
 
 
 def _require(cond, ok, bad, issue: str, issues: list[str]) -> None:
@@ -287,7 +296,8 @@ def _check_plugin_backend(terminal_env: str, issues: list[str]) -> None:
         _require(ok, (label, detail), (label, detail), detail.strip("()"), issues)
 
 
-_BACKEND_CHECKS = {"ssh": _check_ssh_backend, "daytona": _check_daytona_backend, "vercel_sandbox": _check_vercel_backend}
+_BACKEND_CHECKS = {"ssh": _check_ssh_backend, "daytona": _check_daytona_backend,
+                   "vercel_sandbox": _check_vercel_backend, "restricted": _check_restricted_backend}
 
 
 @doctor_check()
