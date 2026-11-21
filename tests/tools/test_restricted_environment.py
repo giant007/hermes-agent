@@ -144,5 +144,20 @@ def test_backend_is_registered_in_dispatch_tables():
     assert "restricted" in specs
 
 
+def test_create_environment_dispatches_to_restricted(workspace):
+    from tools.terminal_tool_backends import _create_environment, _restricted_config_from_config
+
+    config = {
+        "restricted_root": str(workspace),
+        "restricted_allowed_env": ["PATH", "HOME"],
+    }
+    env = _create_environment(
+        "restricted", image="", cwd=str(workspace), timeout=5,
+        restricted_config=_restricted_config_from_config(config))
+    assert isinstance(env, RestrictedEnvironment)
+    assert env.root == workspace.resolve()
+    assert env.allowed_env == frozenset(["PATH", "HOME"])
+
+
 def test_shell_path_round_trip(workspace):
     assert _from_shell_path(_to_shell_path(workspace)) == str(workspace)

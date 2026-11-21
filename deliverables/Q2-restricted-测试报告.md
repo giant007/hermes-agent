@@ -4,7 +4,7 @@
 - 测试日期：2026-11-21
 - 测试对象：新增的 `restricted` 执行后端
 - 测试文件：`E:\笔试\hermes-agent\tests\tools\test_restricted_environment.py`
-- 结论：**五项要求全部满足；12 项自动化测试全部通过。**
+- 结论：**五项要求全部满足；13 项自动化测试全部通过。**
 
 ---
 
@@ -140,7 +140,7 @@ local, restricted, docker, ssh, modal, daytona, vercel_sandbox
 结果：
 
 ```text
-12 passed in 5.14s
+13 passed in 7.16s
 ```
 
 完整测试文件：
@@ -165,6 +165,7 @@ E:\笔试\hermes-agent\tests\tools\test_restricted_environment.py
 | 4. 环境变量清洗 | `test_build_run_env_forwards_only_allowlisted_names` | 白名单变量透传，非白名单变量和 `HOME` 不透传 | PASSED |
 | 4. 环境变量清洗 | `test_child_process_does_not_inherit_host_secret` | 端到端执行 `env`，验证宿主 secret 不出现在子进程环境中 | PASSED |
 | 5. 注册为可选后端 | `test_backend_is_registered_in_dispatch_tables` | 验证 `_ENV_BUILDERS` 与 `_BACKEND_SPECS` 中包含 `restricted` | PASSED |
+| 5. 注册为可选后端 | `test_create_environment_dispatches_to_restricted` | 通过统一工厂 `_create_environment('restricted')` 实际创建受限环境 | PASSED |
 | 辅助 | `test_find_bash_returns_executable` | 能找到可用 bash，且跳过 Windows WSL 启动器 | PASSED |
 | 辅助 | `test_shell_path_round_trip` | Windows 路径与 Git Bash 路径互转正确 | PASSED |
 
@@ -264,12 +265,14 @@ test_child_process_does_not_inherit_host_secret PASSED
 
 ```text
 test_backend_is_registered_in_dispatch_tables PASSED
+test_create_environment_dispatches_to_restricted PASSED
 ```
 
 验证点：
 
 - `tools/terminal_tool_backends.py` 的 `_ENV_BUILDERS` 中有 `restricted`
 - `_BACKEND_SPECS` 中有 `restricted`
+- 统一工厂 `_create_environment('restricted')` 实际返回 `RestrictedEnvironment` 实例
 - Dashboard `/api/config/schema` 的下拉选项包含 `restricted`
 - `hermes setup terminal` 中可进入 Restricted 配置向导
 - `hermes doctor` 会检查 restricted root
@@ -320,9 +323,27 @@ test_backend_is_registered_in_dispatch_tables PASSED
 | 项目 | 结果 |
 |---|---|
 | 五项要求 | 5 / 5 通过 |
-| 自动化测试 | 12 / 12 通过 |
+| 自动化测试 | 13 / 13 通过 |
 | Dashboard 可选 | 是 |
 | 真实配置子进程 cwd | `E:\hermes-workspace` |
 | 项目可启动 | 是，Dashboard 运行于 `http://127.0.0.1:9119/` |
 
 **测试通过。**
+
+---
+
+## 九、代码仓库地址
+
+Q2 的完整代码已提交到远程仓库，压缩包中只包含测试报告、截图和本说明，不打包代码及编译产物。
+
+- 仓库地址：`https://github.com/giant007/hermes-agent.git`
+- 分支：`main`
+- 提交：`586fedcd feat: add restricted terminal backend and Q2 test report`
+
+获取代码：
+
+```bash
+git clone https://github.com/giant007/hermes-agent.git
+cd hermes-agent
+git checkout 586fedcd
+```
